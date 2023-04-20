@@ -7,7 +7,7 @@
 
 import Foundation
 
-class Order: ObservableObject {
+class Order: ObservableObject, Codable {
     // Store order details
     static let types = ["Vanilla", "Strawberry", "Chocolate", "Rainbow"]
 
@@ -61,4 +61,44 @@ class Order: ObservableObject {
 
         return cost
     }
+    
+    // Because we have @Published properties, our class is no longer Codable, so we have to add our own code to make it conform to Codable again. Add our enum that conforms to CodingKey to list all of the properties we want to save (all except the static property)
+    enum CodingKeys: CodingKey {
+        case type, quantity, extraFrosting, addSprinkles, name, streetAddress, city, zip
+    }
+    
+    // Create our encode(to:) method that creates a container using the coding keys enum we just created, then writes out all the properties attached to their respective key. This is just a matter of calling encode(_:forKey:) repeatedly
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+
+        try container.encode(type, forKey: .type)
+        try container.encode(quantity, forKey: .quantity)
+
+        try container.encode(extraFrosting, forKey: .extraFrosting)
+        try container.encode(addSprinkles, forKey: .addSprinkles)
+
+        try container.encode(name, forKey: .name)
+        try container.encode(streetAddress, forKey: .streetAddress)
+        try container.encode(city, forKey: .city)
+        try container.encode(zip, forKey: .zip)
+    }
+    
+    // Then we add our required initializer to decode an instance of Order from archived data, which basically does the reverse of the encode method.
+    required init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        type = try container.decode(Int.self, forKey: .type)
+        quantity = try container.decode(Int.self, forKey: .quantity)
+
+        extraFrosting = try container.decode(Bool.self, forKey: .extraFrosting)
+        addSprinkles = try container.decode(Bool.self, forKey: .addSprinkles)
+
+        name = try container.decode(String.self, forKey: .name)
+        streetAddress = try container.decode(String.self, forKey: .streetAddress)
+        city = try container.decode(String.self, forKey: .city)
+        zip = try container.decode(String.self, forKey: .zip)
+    }
+    
+    // Add a second initializer so we can create an order without any prior data
+    init() { }
 }
