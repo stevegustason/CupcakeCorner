@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct CheckoutView: View {
-    @ObservedObject var order: Order
+    @ObservedObject var order: OrderClass
     
     // Method to place our order
     func placeOrder() async {
@@ -32,20 +32,25 @@ struct CheckoutView: View {
             let (data, _) = try await URLSession.shared.upload(for: request, from: encoded)
             
             // Decode the data that came back
-            let decodedOrder = try JSONDecoder().decode(Order.self, from: data)
+            let decodedOrder = try JSONDecoder().decode(OrderClass.self, from: data)
             // Set our confirmation message
-            confirmationMessage = "Your order for \(decodedOrder.quantity)x \(Order.types[decodedOrder.type].lowercased()) cupcakes is on its way!"
-            // And display our alert
-            showingConfirmation = true
+            confirmationMessage = "Your order for \(decodedOrder.order.quantity)x \(OrderStruct.types[decodedOrder.order.type].lowercased()) cupcakes is on its way!"
             
         } catch {
             // If something went wrong, print an error message
             print("Checkout failed.")
+            
+            // Set our error alert
+            confirmationMessage = "Something went wrong, please check your internet connection and try again."
+            errorMessage = true
         }
+        // Display our alert
+        showingConfirmation = true
     }
     
     @State private var confirmationMessage = ""
     @State private var showingConfirmation = false
+    @State private var errorMessage = false
 
     var body: some View {
         ScrollView {
@@ -61,7 +66,7 @@ struct CheckoutView: View {
                 .frame(height: 233)
 
                 // Show the cost of the order formatted for USD
-                Text("Your total is \(order.cost, format: .currency(code: "USD"))")
+                Text("Your total is \(order.order.cost, format: .currency(code: "USD"))")
                     .font(.title)
 
                 // Place order button, which uses a task to allow us to add await so we can use our asynchronous function
@@ -75,7 +80,7 @@ struct CheckoutView: View {
         }
         .navigationTitle("Check out")
         .navigationBarTitleDisplayMode(.inline)
-        .alert("Thank you!", isPresented: $showingConfirmation) {
+        .alert(errorMessage ? "Error" : "Thank you!", isPresented: $showingConfirmation) {
             Button("OK") { }
         } message: {
             Text(confirmationMessage)
@@ -85,6 +90,6 @@ struct CheckoutView: View {
 
 struct CheckoutView_Previews: PreviewProvider {
     static var previews: some View {
-        CheckoutView(order: Order())
+        CheckoutView(order: OrderClass())
     }
 }
